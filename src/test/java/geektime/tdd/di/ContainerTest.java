@@ -165,7 +165,44 @@ public class ContainerTest {
 
         @Nested
         public class FieldInjection {
+            static class ComponentWithFiledInjection {
+                @Inject
+                Dependency dependency;
+            }
 
+            static class SubclassWithFiledInjection extends ComponentWithFiledInjection {
+            }
+
+            @Test
+            public void should_inject_dependency_via_filed() {
+                Dependency dependency = new Dependency() {
+                };
+                config.bind(Dependency.class, dependency);
+                config.bind(ComponentWithFiledInjection.class, ComponentWithFiledInjection.class);
+
+                ComponentWithFiledInjection component = config.getContext().get(ComponentWithFiledInjection.class).get();
+
+                assertSame(dependency, component.dependency);
+
+            }
+
+            @Test
+            public void should_include_filed_dependency_in_dependencies() {
+                ConstructorInjectionProvider<ComponentWithFiledInjection> provider = new ConstructorInjectionProvider<>(ComponentWithFiledInjection.class);
+                assertArrayEquals(new Class<?>[]{Dependency.class}, provider.getDependencies().toArray(Class<?>[]::new));
+            }
+
+            @Test
+            public void should_inject_dependency_via_superclass_inject_filed() {
+                Dependency dependency = new Dependency() {
+                };
+                config.bind(Dependency.class, dependency);
+                config.bind(SubclassWithFiledInjection.class, SubclassWithFiledInjection.class);
+
+                SubclassWithFiledInjection component = config.getContext().get(SubclassWithFiledInjection.class).get();
+
+                assertSame(dependency, component.dependency);
+            }
         }
 
         @Nested
