@@ -52,7 +52,7 @@ public class ContainerTest {
         public class DependencyCheck {
             @Test
             public void should_throw_exception_if_dependency_not_found() {
-                config.bind(Component.class, ComponentWithInjectConstructor.class);
+                config.bind(Component.class, InjectConstructor.class);
 
                 DependencyNotFoundException exception = assertThrows(DependencyNotFoundException.class, () -> config.getContext());
 
@@ -63,7 +63,7 @@ public class ContainerTest {
 
             @Test
             public void should_throw_exception_if_cyclic_dependencies_found() {
-                config.bind(Component.class, ComponentWithInjectConstructor.class);
+                config.bind(Component.class, InjectConstructor.class);
                 config.bind(Dependency.class, DependencyDependenciesOnComponent.class);
 
                 CyclicDependenciesFoundException exception = assertThrows(CyclicDependenciesFoundException.class, () -> config.getContext());
@@ -78,7 +78,7 @@ public class ContainerTest {
 
             @Test
             public void should_throw_exception_if_transitive_cyclic_dependencies_found() {
-                config.bind(Component.class, ComponentWithInjectConstructor.class);
+                config.bind(Component.class, InjectConstructor.class);
                 config.bind(Dependency.class, DependencyDependedOnAnotherDependency.class);
                 config.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
 
@@ -119,16 +119,16 @@ interface AnotherDependency {
 
 }
 
-class ComponentWithDefaultConstructor implements Component {
-    public ComponentWithDefaultConstructor() {
+class DefaultConstructor implements Component {
+    public DefaultConstructor() {
     }
 }
 
-class ComponentWithInjectConstructor implements Component {
+class InjectConstructor implements Component {
     private Dependency dependency;
 
     @Inject
-    public ComponentWithInjectConstructor(Dependency dependency) {
+    public InjectConstructor(Dependency dependency) {
         this.dependency = dependency;
     }
 
