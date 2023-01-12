@@ -92,6 +92,20 @@ public class ContainerTest {
                 assertEquals("indirect dependency", ((DependencyWithInjectConstructor) dependency).getDependency());
             }
 
+            abstract class AbstractComponent implements Component {
+                @Inject
+                public AbstractComponent() {
+                }
+            }
+
+            @Test
+            public void should_throw_exception_if_component_is_abstract() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(AbstractComponent.class));
+            }
+            @Test
+            public void should_throw_exception_if_component_is_interface() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(Component.class));
+            }
             // TODO: multi inject constructor
             @Test
             public void should_throw_exception_if_multi_inject_constructors_provided() {
@@ -187,12 +201,6 @@ public class ContainerTest {
             }
 
             @Test
-            public void should_include_filed_dependency_in_dependencies() {
-                ConstructorInjectionProvider<ComponentWithFiledInjection> provider = new ConstructorInjectionProvider<>(ComponentWithFiledInjection.class);
-                assertArrayEquals(new Class<?>[]{Dependency.class}, provider.getDependencies().toArray(Class<?>[]::new));
-            }
-
-            @Test
             public void should_inject_dependency_via_superclass_inject_filed() {
                 Dependency dependency = new Dependency() {
                 };
@@ -203,6 +211,22 @@ public class ContainerTest {
 
                 assertSame(dependency, component.dependency);
             }
+
+            static class FinalInjectFiled {
+                @Inject
+                final Dependency dependency = null;
+            }
+            @Test
+            public void should_throw_exception_if_inject_filed_is_final() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(FinalInjectFiled.class));
+            }
+            @Test
+            public void should_include_filed_dependency_in_dependencies() {
+                ConstructorInjectionProvider<ComponentWithFiledInjection> provider = new ConstructorInjectionProvider<>(ComponentWithFiledInjection.class);
+                assertArrayEquals(new Class<?>[]{Dependency.class}, provider.getDependencies().toArray(Class<?>[]::new));
+            }
+
+
         }
 
         @Nested
@@ -305,6 +329,16 @@ public class ContainerTest {
             public void should_include_dependencies_from_inject_method() {
                 ConstructorInjectionProvider<InjectMethodWithDependency> provider = new ConstructorInjectionProvider<>(InjectMethodWithDependency.class);
                 assertArrayEquals(new Class<?>[]{Dependency.class}, provider.getDependencies().toArray(Class<?>[]::new));
+            }
+
+            static class InjectMethodWithTypeParameter {
+                @Inject
+                <T> void install() {
+                }
+            }
+            @Test
+            public void should_throw_exception_if_inject_method_has_type_parameter() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(InjectMethodWithTypeParameter.class));
             }
         }
     }
