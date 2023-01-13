@@ -11,22 +11,12 @@ public class ContextConfig {
 
 
     public <Type> void bind(Class<Type> type, Type instance) {
-        providers.put(type, new ComponentProvider() {
-            @Override
-            public Object get(Context context) {
-                return instance;
-            }
-
-            @Override
-            public List<Class<?>> getDependencies() {
-                return of();
-            }
-        });
+        providers.put(type, (ComponentProvider) context -> instance);
     }
 
     public <Type, Implementation extends Type>
     void bind(Class<Type> type, Class<Implementation> implementation) {
-        providers.put(type, new ConstructorInjectionProvider<>(implementation));
+        providers.put(type, new InjectionProvider<>(implementation));
     }
 
     public Context getContext() {
@@ -52,8 +42,8 @@ public class ContextConfig {
     interface ComponentProvider<T> {
         T get(Context context);
 
-        List<Class<?>> getDependencies();
+        default List<Class<?>> getDependencies() {
+            return of();
+        }
     }
-
-
 }
