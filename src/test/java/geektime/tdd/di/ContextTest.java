@@ -187,7 +187,10 @@ class ContextTest {
             return Stream.of(
                     Arguments.of(Named.of("Constructor Injection", MissingDependencyConstructor.class)),
                     Arguments.of(Named.of("Filed Injection", MissingDependencyField.class)),
-                    Arguments.of(Named.of("Method Injection", MissingDependencyMethod.class))
+                    Arguments.of(Named.of("Method Injection", MissingDependencyMethod.class)),
+                    Arguments.of(Named.of("Provider in Inject Constructor", MissingDependencyProviderConstructor.class)),
+                    Arguments.of(Named.of("Provider in Inject Filed", MissingDependencyProviderFiled.class)),
+                    Arguments.of(Named.of("Provider in Inject Method", MissingDependencyProviderMethod.class))
             );
         }
 
@@ -205,6 +208,23 @@ class ContextTest {
         static class MissingDependencyMethod implements Component {
             @Inject
             public void install(Dependency dependency) {
+            }
+        }
+
+        static class MissingDependencyProviderConstructor implements Component {
+            @Inject
+            public MissingDependencyProviderConstructor(Provider<Dependency> dependency) {
+            }
+        }
+
+        static class MissingDependencyProviderFiled implements Component {
+            @Inject
+            Provider<Dependency> dependency;
+        }
+
+        static class MissingDependencyProviderMethod implements Component {
+            @Inject
+            void install(Provider<Dependency> dependency) {
             }
         }
 
@@ -342,6 +362,21 @@ class ContextTest {
             @Inject
             public void install(Component component) {
             }
+        }
+
+        static class CyclicDependencyProviderConstructor implements Dependency {
+            @Inject
+            public CyclicDependencyProviderConstructor(Provider<Component> component) {
+            }
+        }
+
+        @Test
+        public void should_not_throw_exception_if_cyclic_dependency_via_provider() {
+            config.bind(Component.class, CyclicComponentInjectConstructor.class);
+            config.bind(Dependency.class, CyclicDependencyProviderConstructor.class);
+
+            Context context = config.getContext();
+            assertTrue(context.get(Component.class).isPresent());
         }
     }
 }

@@ -54,8 +54,15 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
                 injectMethods.stream().flatMap(m -> stream(m.getParameterTypes()))).toList();
     }
 
+    @Override
+    public List<Type> getDependencyTypes() {
+        return concat(concat(stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
+                        injectFields.stream().map(Field::getGenericType)),
+                injectMethods.stream().flatMap(m -> stream(m.getParameters()).map(Parameter::getParameterizedType))).toList();
+    }
+
     private static <T> List<Method> getInjectMethods(Class<T> component) {
-        List<Method> injectMethods = traverse(component, (methods, current)-> injectable(current.getDeclaredMethods())
+        List<Method> injectMethods = traverse(component, (methods, current) -> injectable(current.getDeclaredMethods())
                 .filter(m -> isOverrideByInjectMethod(methods, m))
                 .filter(m -> isOverrideByNoInjectMethod(component, m))
                 .toList());
@@ -86,7 +93,7 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
         List<T> members = new ArrayList<>();
         Class<?> current = component;
         while (current != Object.class) {
-            members.addAll(finder.apply(members,current));
+            members.addAll(finder.apply(members, current));
             current = current.getSuperclass();
         }
         return members;
@@ -110,7 +117,7 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
 
     private static Object[] toDependencies(Context context, Executable executable) {
         return stream(executable.getParameters()).map(
-                p->{
+                p -> {
                     Type type = p.getParameterizedType();
                     if (type instanceof ParameterizedType) return context.get((ParameterizedType) type).get();
                     return context.get((Class<?>) type).get();
