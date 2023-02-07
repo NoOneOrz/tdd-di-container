@@ -20,11 +20,9 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
 
     public InjectionProvider(Class<T> component) {
         if (Modifier.isAbstract(component.getModifiers())) throw new IllegalComponentException();
-
         this.injectConstructor = getInjectConstructor(component);
         this.injectFields = getInjectFields(component);
         this.injectMethods = getInjectMethods(component);
-
         if (injectFields.stream().anyMatch(f -> Modifier.isFinal(f.getModifiers())))
             throw new IllegalComponentException();
         if (injectMethods.stream().anyMatch(m -> m.getTypeParameters().length != 0))
@@ -34,13 +32,9 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     @Override
     public T get(Context context) {
         try {
-            T instance = this.injectConstructor.newInstance(toDependencies(context, this.injectConstructor));
-            for (Field field : injectFields) {
-                field.set(instance, toDependency(context, field));
-            }
-            for (Method method : injectMethods) {
-                method.invoke(instance, toDependencies(context, method));
-            }
+            T instance = injectConstructor.newInstance(toDependencies(context, injectConstructor));
+            for (Field field : injectFields) field.set(instance, toDependency(context, field));
+            for (Method method : injectMethods) method.invoke(instance, toDependencies(context, method));
             return instance;
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -48,18 +42,17 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     }
 
     @Override
-    public List<Context.Ref> getDependencies() {
+    public List<ComponentRef> getDependencies() {
         return concat(concat(stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
                         injectFields.stream().map(Field::getGenericType)),
                 injectMethods.stream().flatMap(m -> stream(m.getParameters()).map(Parameter::getParameterizedType)))
-                .map(Context.Ref::of).toList();
+                .map(ComponentRef::of).toList();
     }
 
     private static <T> List<Method> getInjectMethods(Class<T> component) {
         List<Method> injectMethods = traverse(component, (methods, current) -> injectable(current.getDeclaredMethods())
                 .filter(m -> isOverrideByInjectMethod(methods, m))
-                .filter(m -> isOverrideByNoInjectMethod(component, m))
-                .toList());
+                .filter(m -> isOverrideByNoInjectMethod(component, m)).toList());
         Collections.reverse(injectMethods);
         return injectMethods;
     }
@@ -70,12 +63,11 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
 
     private static <Type> Constructor<Type> getInjectConstructor(Class<Type> implementation) {
         List<Constructor<?>> injectConstructors = injectable(implementation.getConstructors()).toList();
-
         if (injectConstructors.size() > 1) throw new IllegalComponentException();
-        return (Constructor<Type>) injectConstructors.stream().findFirst().orElseGet(() -> deafultConstructor(implementation));
+        return (Constructor<Type>) injectConstructors.stream().findFirst().orElseGet(() -> defaultConstructor(implementation));
     }
 
-    private static <Type> Constructor<Type> deafultConstructor(Class<Type> implementation) {
+    private static <Type> Constructor<Type> defaultConstructor(Class<Type> implementation) {
         try {
             return implementation.getDeclaredConstructor();
         } catch (NoSuchMethodException e) {
@@ -110,8 +102,7 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     }
 
     private static Object[] toDependencies(Context context, Executable executable) {
-        return stream(executable.getParameters()).map(
-                p -> toDependency(context, p.getParameterizedType())).toArray(Object[]::new);
+        return stream(executable.getParameters()).map(p -> toDependency(context, p.getParameterizedType())).toArray(Object[]::new);
     }
 
     private static Object toDependency(Context context, Field field) {
@@ -119,7 +110,6 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     }
 
     private static Object toDependency(Context context, Type type) {
-        return context.get(Context.Ref.of(type)).get();
+        return context.get(ComponentRef.of(type)).get();
     }
-
 }

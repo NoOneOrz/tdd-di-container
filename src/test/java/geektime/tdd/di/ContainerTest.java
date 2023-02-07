@@ -32,7 +32,7 @@ public class ContainerTest {
     }
 }
 
-interface Component {
+interface TestComponent {
     default Dependency dependency() {
         return null;
     }
