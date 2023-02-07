@@ -136,6 +136,11 @@ public class InjectionTest {
             }
         }
 
+        @Nested
+        public class WithQualifier {
+
+        }
+
     }
 
     @Nested
@@ -205,6 +210,11 @@ public class InjectionTest {
             public void should_throw_exception_if_inject_filed_is_final() {
                 assertThrows(IllegalComponentException.class, () -> new InjectionProvider<>(FinalInjectFiled.class));
             }
+        }
+
+        @Nested
+        public class WithQualifier {
+
         }
     }
 
@@ -338,6 +348,11 @@ public class InjectionTest {
             public void should_throw_exception_if_inject_method_has_type_parameter() {
                 assertThrows(IllegalComponentException.class, () -> new InjectionProvider<>(InjectMethodWithTypeParameter.class));
             }
+        }
+
+        @Nested
+        public class WithQualifier {
+
         }
     }
 }
